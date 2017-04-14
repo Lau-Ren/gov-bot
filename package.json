@@ -9,8 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.3.0",
     "cheerio": "^0.22.0",
+    "each-async": "^1.1.1",
     "express": "^4.15.2",
+    "promise": "^7.1.1",
     "request": "^2.81.0",
     "twit": "^2.2.5"
   }
