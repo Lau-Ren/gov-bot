@@ -42,7 +42,10 @@ function runBot(){
       ){
         // console.log('trying to post', '\n',billsToTweets[0],'\n', lastTweetBill)
         postTweet(billsToTweets[0])
+      } else {
+            postTweet('I got nothin :(')
       }
+
 
       // // initial twitter flurry
       // var tweetsArray = [];
