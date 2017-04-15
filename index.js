@@ -1,12 +1,18 @@
 
+require('dotenv').config()
 var Promise = require('promise');
 var request = require('request');
 var cheerio = require('cheerio');
 var async = require('async/series');
 var Twit = require('twit');
-var config = require('./config.js');
+// var config = require('./config.js');
  
-var T = new Twit(config);
+var T = new Twit({
+  consumer_key: process.env.TWITTER_CONSUMER_KEY,  
+  consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+  access_token: process.env.TWITTER_ACCESS_TOKEN,  
+  access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+});
 
 
 runBot()
@@ -14,16 +20,27 @@ runBot()
 function runBot(){
 
   Promise.all([getBills(),getLastTweet()]).then(function(res){
-  
-      var billsToTweets= res[0]
-      var lastTweetBill = res[1]
+      var httpRegex = /http*/g
+
+      var billsToTweets= res[0];
+      var latestBill = billsToTweets[0];
+      var lastTweetBill = res[1];
        
+      var httpIndexLastTweet = httpRegex.exec(lastTweetBill).index;
+      var httpIndexBillToTweet = httpRegex.exec(latestBill).index
+
+      var lastTweetsTitle = lastTweetBill.substr(0, httpIndexLastTweet - 1);
+      var billToTweetTitle = latestBill.substr(0, httpIndexBillToTweet -1);
+    
+
       // after initial flurry
       if(billsToTweets.length && 
+        latestBill &&
         lastTweetBill && 
         lastTweetBill.length > 1 &&
-        billsToTweets[0] !== lastTweetBill 
+        lastTweetsTitle !== billToTweetTitle
       ){
+        // console.log('trying to post', '\n',billsToTweets[0],'\n', lastTweetBill)
         postTweet(billsToTweets[0])
       }
 
@@ -75,18 +92,14 @@ function getBills() {
             bills.unshift(billTweet)
           }
         }
-
+        console.log('\nRetrieved bills\n')
         resolve(bills);
       } else {
+        console.error('\nFailed to retrieve bills\n', error)
         reject(error)
       }
     })
-
-
   })
-
-
-    
 }
 
 function getLastTweet() {
@@ -98,15 +111,15 @@ function getLastTweet() {
         if(data[0]){
            lastTweet = data[0].text
         }
-
+        
+        console.log('\n Retrieved last tweet\n')
         resolve(lastTweet);
       } else {
+        console.error('\n Failed to retrieve last tweet\n', error)
         reject(error)
       }
     })
   })
-
-
 }
 
 function postTweet(tweet){
@@ -117,11 +130,9 @@ function postTweet(tweet){
         console.log('\nPOSTED: ', tweet)
         resolve(response);
       } else {
-        console.error(error)
+        console.error('\nFailed to post tweet\n',error)
         reject(error)
       }
-       
-      
     })
   })
     
