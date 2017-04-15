@@ -19,57 +19,33 @@ function runBot(){
       var lastTweetBill = res[1]
        
       // after initial flurry
-      // if(billsToTweets.length && lastTweetBill && billsToTweets[0] !== lastTweetBill ){
-      //   postTweet(billsToTweets[0])
+      if(billsToTweets.length && 
+        lastTweetBill && 
+        lastTweetBill.length > 1 &&
+        billsToTweets[0] !== lastTweetBill 
+      ){
+        postTweet(billsToTweets[0])
+      }
+
+      // // initial twitter flurry
+      // var tweetsArray = [];
+
+      //  for (var i = 0; i <= billsToTweets.length - 1; i++) {
+      //   var tweet = billsToTweets[i]
+      //   tweetsArray.push(postTweet(tweet))  
+
       // }
 
-      // initial twitter flurry
-      var tweetsArray = [];
+      // function run(){
+      //   var fn = tweetsArray.shift();
+      //   if(!fn){
+      //     console.log('Done');
+      //   } else {
+      //     fn(run);
+      //   }
+      // }
 
-       for (var i = 0; i <= billsToTweets.length - 1; i++) {
-        var tweet = billsToTweets[i]
-
-        tweetsArray.push(postTweet(tweet))  
-        // tweetsArray.push(postTweet(tweet))
-
-        // tweetsArray.push(function(callback) {
-        //   postTweet(tweet, callback)
-        //     // setTimeout(function(err, res){
-        //     //   console.log('IN the First thing')
-        //     //   callback(err, res);
-        //     // }, 500)
-        //   })
-
-      }
-
-      function run(){
-        var fn = tweetsArray.shift();
-        if(!fn){
-          console.log('Done');
-        } else {
-          fn(run);
-        }
-      }
-
-      run();
-   // console.log('tweetsArray', tweetsArray)
-
-    //   async(tweetsArray, function(error, results){
-
-    //     console.log('error', error);
-    //     console.log('results', results);
-      
-    //     if(!error){
-    //       console.log('finished');
-    //     } else {
-    //       console.log(error);
-    //     }
-      
-    //   });
-
-    // }).catch(function(reason){ 
-    //   console.log('reason',reason)
-    // });
+      // run();
   })
 }
 
@@ -114,7 +90,7 @@ function getBills() {
 }
 
 function getLastTweet() {
-  var lastTweet = 'no tweet';
+  var lastTweet = '';
   return new Promise(function (resolve, reject) {
     T.get('statuses/user_timeline', {}, function(error, data, response) {
 
@@ -136,9 +112,15 @@ function getLastTweet() {
 function postTweet(tweet){
   return new Promise(function (resolve, reject) {
     return T.post('statuses/update', { status: tweet }, function(error, data, response) {
-    
-        console.log('...posting... ', tweet)
+      if(!error){
+      
+        console.log('\nPOSTED: ', tweet)
         resolve(response);
+      } else {
+        console.error(error)
+        reject(error)
+      }
+       
       
     })
   })
