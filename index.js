@@ -50,8 +50,8 @@ function runBot(){
         postTweet(latestBill)
       } else {
         console.log('nothing to post :(')
-        var date = new Date(Date.now());
-        postTweet('nothing new @ '+ date)
+        // var date = new Date(Date.now());
+        // postTweet('nothing new @ '+ date)
       }
 
     
