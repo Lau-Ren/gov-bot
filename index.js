@@ -20,18 +20,24 @@ runBot()
 function runBot(){
 
   Promise.all([getBills(),getLastTweet()]).then(function(res){
-      var httpRegex = /http*/g
+
+
+      var httpRegex = /http/
 
       var billsToTweets= res[0];
       var latestBill = billsToTweets[0];
       var lastTweetBill = res[1];
-       
-      var httpIndexLastTweet = httpRegex.exec(lastTweetBill).index;
-      var httpIndexBillToTweet = httpRegex.exec(latestBill).index
+ console.log('\n\n lastTweetBill', httpRegex.exec(lastTweetBill) , '\n\n latestBill',httpRegex.exec(latestBill),latestBill,'\n\n\n')
+
+
+      //null last tweet was not a proper bill
+      var httpIndexLastTweet = httpRegex.exec(lastTweetBill) ? httpRegex.exec(lastTweetBill).index : null;
+      //null string to tweet doesnt contain a url
+      var httpIndexBillToTweet = httpRegex.exec(latestBill) ? httpRegex.exec(latestBill).index : null;
+
 
       var lastTweetsTitle = lastTweetBill.substr(0, httpIndexLastTweet - 1);
       var billToTweetTitle = latestBill.substr(0, httpIndexBillToTweet -1);
-    
 
       // after initial flurry
       if(billsToTweets.length && 
@@ -40,11 +46,15 @@ function runBot(){
         lastTweetBill.length > 1 &&
         lastTweetsTitle !== billToTweetTitle
       ){
-        // console.log('trying to post', '\n',billsToTweets[0],'\n', lastTweetBill)
-        postTweet(billsToTweets[0])
+        console.log('trying to post', latestBill)
+        postTweet(latestBill)
       } else {
-            postTweet('I got nothin :(')
+        console.log('nothing to post :(')
+        var date = new Date(Date.now());
+        postTweet('nothing new @ '+ date)
       }
+
+    
 
 
       // // initial twitter flurry
@@ -98,7 +108,7 @@ function getBills() {
         console.log('\nRetrieved bills\n')
         resolve(bills);
       } else {
-        console.error('\nFailed to retrieve bills\n', error)
+        console.log('\nFailed to retrieve bills\n', error)
         reject(error)
       }
     })
@@ -118,7 +128,7 @@ function getLastTweet() {
         console.log('\n Retrieved last tweet\n')
         resolve(lastTweet);
       } else {
-        console.error('\n Failed to retrieve last tweet\n', error)
+        console.log('\n Failed to retrieve last tweet\n', error)
         reject(error)
       }
     })
@@ -133,7 +143,7 @@ function postTweet(tweet){
         console.log('\nPOSTED: ', tweet)
         resolve(response);
       } else {
-        console.error('\nFailed to post tweet\n',error)
+        console.log('\nFailed to post tweet\n',error)
         reject(error)
       }
     })
