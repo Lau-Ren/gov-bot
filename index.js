@@ -5,128 +5,56 @@ var request = require('request');
 var cheerio = require('cheerio');
 var async = require('async/series');
 var Twit = require('twit');
+const postTweet = require('./scripts/post-tweet');
+const getLatestBills = require('./scripts/get-latest-bills');
 // var config = require('./config.js');
- 
+
 var T = new Twit({
-  consumer_key: process.env.TWITTER_CONSUMER_KEY,  
+  consumer_key: process.env.TWITTER_CONSUMER_KEY,
   consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
-  access_token: process.env.TWITTER_ACCESS_TOKEN,  
+  access_token: process.env.TWITTER_ACCESS_TOKEN,
   access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 });
 
 
-runBot()
+runBot();
 
-function runBot(){
+// getBillDetails('https://www.parliament.nz/en/pb/bills-and-laws/bills-proposed-laws/document/BILL_84939/financial-markets-derivatives-margin-and-benchmarking')
 
-  Promise.all([getBills(),getLastTweet()]).then(function(res){
+function runBot() {
 
-
-      var httpRegex = /http/
-
-      var billsToTweets= res[0];
-      var latestBill = billsToTweets[0];
-      var lastTweetBill = res[1];
- console.log('\n\n lastTweetBill', httpRegex.exec(lastTweetBill) , '\n\n latestBill',httpRegex.exec(latestBill),latestBill,'\n\n\n')
-
-
-      //null last tweet was not a proper bill
-      var httpIndexLastTweet = httpRegex.exec(lastTweetBill) ? httpRegex.exec(lastTweetBill).index : null;
-      //null string to tweet doesnt contain a url
-      var httpIndexBillToTweet = httpRegex.exec(latestBill) ? httpRegex.exec(latestBill).index : null;
-
-
-      var lastTweetsTitle = lastTweetBill.substr(0, httpIndexLastTweet - 1);
-      var billToTweetTitle = latestBill.substr(0, httpIndexBillToTweet -1);
-
-      // after initial flurry
-      if(billsToTweets.length && 
-        latestBill &&
-        lastTweetBill && 
-        lastTweetBill.length > 1 &&
-        lastTweetsTitle !== billToTweetTitle
-      ){
-        console.log('trying to post', latestBill)
-        postTweet(latestBill)
-      } else {
-        console.log('nothing to post :(')
-        // var date = new Date(Date.now());
-        // postTweet('nothing new @ '+ date)
-      }
-
-    
-
-
-      // // initial twitter flurry
-      // var tweetsArray = [];
-
-      //  for (var i = 0; i <= billsToTweets.length - 1; i++) {
-      //   var tweet = billsToTweets[i]
-      //   tweetsArray.push(postTweet(tweet))  
-
-      // }
-
-      // function run(){
-      //   var fn = tweetsArray.shift();
-      //   if(!fn){
-      //     console.log('Done');
-      //   } else {
-      //     fn(run);
-      //   }
-      // }
-
-      // run();
-  })
-}
-
-function getBills() {
-   var url = 'https://www.parliament.nz/en/pb/bills-and-laws/bills-proposed-laws/';
-   var basUrl = 'https://www.parliament.nz'
-
-  return new Promise(function (resolve, reject) {
-    request(url, function(error, response, html){
-      if(!error){
-        var $ = cheerio.load(html);
-        var billRows = $('.list__cell-heading')
-        var bills = [];
-        for (var i = billRows.length - 1; i >= 0; i--) {
-      
-          var billTitle = billRows[i].attribs.title;
-          var billPath =  billRows[i].attribs.href;
-          var fullBillLink = basUrl + billPath
-          var beginingUrl = billPath.slice(0, 50)
-          var correctBillPath = '/en/pb/bills-and-laws/bills-proposed-laws/document';
-          var startLen = billRows.length
-
-          if(billTitle.length && beginingUrl === correctBillPath){
-           
-            var billTweet = billTitle + ' ' + fullBillLink;
-
-            bills.unshift(billTweet)
-          }
-        }
-        console.log('\nRetrieved bills\n')
-        resolve(bills);
-      } else {
-        console.log('\nFailed to retrieve bills\n', error)
-        reject(error)
-      }
+  Promise.all([getLatestBills(), getOldTweets()])
+    .then(function ([newBills, oldTweets]) {
+      return Promise.all(newBills.map((bill) => {
+        let tweetGoodToGo = billNotPosted(bill, oldTweets)
+        if(bill &&
+          bill.length > 0 &&
+          tweetGoodToGo
+        ){
+          console.log('Posting Bill: ', bill)
+          postTweet(bill)
+        } 
+      }))
+  
+    }).catch((error) => {
+      console.log('Error running bot', error)
     })
-  })
 }
 
-function getLastTweet() {
-  var lastTweet = '';
-  return new Promise(function (resolve, reject) {
-    T.get('statuses/user_timeline', {}, function(error, data, response) {
+function billNotPosted(bill, oldTweets) {
+  return !oldTweets.map(({text}) => text).includes(bill)
+}
 
-      if(!error){
-        if(data[0]){
-           lastTweet = data[0].text
-        }
-        
-        console.log('\n Retrieved last tweet\n')
-        resolve(lastTweet);
+function getOldTweets() {
+  return new Promise(function (resolve, reject) {
+    T.get('statuses/user_timeline', {
+      exclude_replies: true,
+      include_rts: false,
+      trim_user: true
+    }, function (error, data, response) {
+
+      if (!error) {
+        resolve(data);
       } else {
         console.log('\n Failed to retrieve last tweet\n', error)
         reject(error)
@@ -134,20 +62,3 @@ function getLastTweet() {
     })
   })
 }
-
-function postTweet(tweet){
-  return new Promise(function (resolve, reject) {
-    return T.post('statuses/update', { status: tweet }, function(error, data, response) {
-      if(!error){
-      
-        console.log('\nPOSTED: ', tweet)
-        resolve(response);
-      } else {
-        console.log('\nFailed to post tweet\n',error)
-        reject(error)
-      }
-    })
-  })
-    
-}
-
