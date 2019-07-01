@@ -10,7 +10,6 @@ var T = new Twit({
   
 
 module.exports = function(tweet) {
-    console.log('tweet - ', tweet)
     return new Promise(function (resolve, reject) {
       return T.post('statuses/update', { 
         status: tweet,

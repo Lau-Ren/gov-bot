@@ -25,7 +25,6 @@ function getMPs(){
           var party = mpDataStringSplit[1].trim();
           mps.push({ name, party });
         })
-        console.log('\nmps- ', JSON.stringify(mps, null, 2))
         resolve(mps);
       } else {
         console.log('\nFailed to retrieve mps\n', error)

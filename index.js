@@ -26,12 +26,10 @@ function runBot() {
   Promise.all([getLatestBills(), getOldTweets()])
     .then(function ([newBills, oldTweets]) {
       return Promise.all(newBills.map((bill) => {
-        let tweetGoodToGo = billNotPosted(bill, oldTweets)
         if(bill &&
           bill.length > 0 &&
-          tweetGoodToGo
+          shouldPostBill(bill, oldTweets)
         ){
-          console.log('Posting Bill: ', bill)
           postTweet(bill)
         } 
       }))
@@ -41,8 +39,14 @@ function runBot() {
     })
 }
 
-function billNotPosted(bill, oldTweets) {
-  return !oldTweets.map(({text}) => text).includes(bill)
+function shouldPostBill(bill, oldTweets) {
+  let oldTweetText = oldTweets.map(({text}) => text)
+  //if bill undefined, its not found and can be posted
+  let postIt = !oldTweetText.find((text) => {
+    return text.indexOf(bill.substring(0, 20)) >= 0
+  })
+
+  return postIt;
 }
 
 function getOldTweets() {
@@ -50,7 +54,8 @@ function getOldTweets() {
     T.get('statuses/user_timeline', {
       exclude_replies: true,
       include_rts: false,
-      trim_user: true
+      trim_user: true,
+      count: 200,
     }, function (error, data, response) {
 
       if (!error) {

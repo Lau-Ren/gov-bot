@@ -8,7 +8,6 @@ var allParties = require('../party-data');
 var govBaseUrl = 'https://www.parliament.nz'
 
 function tap (output, topic) {
-  console.log(`--> ${topic}`)
   let strLength = 100;
   if(output.length > 0){
     console.log(`Example output: `, JSON.stringify(output[0]).substring(0, strLength)) 
@@ -20,7 +19,6 @@ function tap (output, topic) {
 }
 
 module.exports = function getLastestBills() {
-  console.log('\ngetLastestBills\n')
   return scrapeBills()
     .then((x) => tap(x, 'SCRAPED BILLS'))
     .then(scrapeBillDetails)
@@ -28,7 +26,7 @@ module.exports = function getLastestBills() {
     .then(makeTweets)
     .then((x) => tap(x, 'MADE TWEETS'))
     .catch((err) => {
-      console.error('\nError\n', err)
+      console.log('\nError\n', err)
       
     })
 }
@@ -57,7 +55,7 @@ function scrapeBillDetails (bills) {
             
           }));
         } else {
-          console.error('\nFailed to retrieve bills details\n', error)
+          console.log('\nFailed to retrieve bills details\n', error)
           reject(error)
         }
       })
